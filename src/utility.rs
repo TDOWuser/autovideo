@@ -3,6 +3,12 @@ use std::io::{BufWriter, stdin, stdout, Write};
 use image::{RgbaImage};
 use image_dds::{dds_from_image, ImageFormat, Mipmaps, Quality};
 
+pub enum Mode {
+    YES,
+    NO,
+    UiMode
+}
+
 pub fn replace_all_strings_in_bytes(data: &mut [u8], to_replace: &str, replacement: &str) -> Result<(), String> {
     let replacement = elongate(replacement, 'X', to_replace.len(), true)?;
     let replacement_bytes = replacement.as_bytes();
@@ -68,7 +74,7 @@ pub fn user_input(text: &str) -> String {
     stdout().flush().unwrap();
     let mut result = String::new();
     stdin().read_line(&mut result).unwrap();
-    result
+    result.trim().to_string()
 }
 
 // pub fn time_string_to_number(string: &str) -> f32 {

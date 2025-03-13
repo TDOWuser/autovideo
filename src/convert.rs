@@ -6,9 +6,9 @@ use std::process::Command;
 use image::{GenericImageView};
 use image_dds::Mipmaps;
 use rayon::prelude::*;
-use crate::utility::{save_as_dds, time_number_to_string, user_input};
+use crate::utility::{save_as_dds, time_number_to_string, user_input, Mode};
 
-pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &str, frame_size: u32, auto_scale: bool, yes: bool, framerate: u32) -> Result<(u8, f32, String), String> {
+pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &str, frame_size: u32, auto_scale: bool, mode: &Mode, framerate: u32, checkpoint_reached: Option<fn()>) -> Result<(u8, f32, String), String> {
     let audio_path = format!("output/Sound/Videos/{mod_identifier}");
     fs::create_dir_all(&audio_path).unwrap();
     let wav_name = format!("{video_identifier}.wav");
@@ -27,6 +27,9 @@ pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &st
                 }
             }
             Err(e) => return Err(format!("{}: ffmpeg is not installed!", e))
+        }
+        if let Some(checkpoint_reached) = checkpoint_reached {
+            checkpoint_reached();
         }
     }
 
@@ -66,6 +69,9 @@ pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &st
         }
         Err(e) => return Err(format!("{}: ffmpeg is not installed!", e))
     }
+    if let Some(checkpoint_reached) = checkpoint_reached {
+        checkpoint_reached();
+    }
     let xwm_name = format!("{video_identifier}.xwm");
     let xwm_path = format!("{audio_path}/{xwm_name}");
     let xwma_encoder_path = Path::new("./autovideo cache/xWMAEncode.exe");
@@ -94,18 +100,26 @@ pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &st
         if framerate != 10 {
             max_time = max_time / framerate as f64 * 10f64;
         }
-        let message = format!(
-            "\nIt seems that \"{}\" is longer than {} (24 grids), the extra length will be cut off and no DriveIn version will be made.\
-            \nDo you want to continue? (y/N) ",
-            input.file_stem().unwrap().to_str().unwrap(),
-            time_number_to_string(max_time)
-        );
-        if yes {
-            println!("{message}Y");
-        } else if user_input(&message).trim().to_lowercase() != "y" {
-            return Err("Input video too long".to_string());
+        if matches!(mode, Mode::UiMode) {
+            return Err(format!(
+                "Video {} is longer than {} (24 grids). Reduce FPS or use a shorter video.",
+                input.file_stem().unwrap().to_str().unwrap(),
+                time_number_to_string(max_time)
+            ));
+        } else {
+            let message = format!(
+                "\nIt seems that \"{}\" is longer than {} (24 grids), the extra length will be cut off and no DriveIn version will be made.\
+                \nDo you want to continue? (y/N) ",
+                input.file_stem().unwrap().to_str().unwrap(),
+                time_number_to_string(max_time)
+            );
+            if matches!(mode, Mode::YES) {
+                println!("{message}Y");
+            } else if user_input(&message).to_lowercase() != "y" {
+                return Err("Input video too long".to_string());
+            }
         }
-    } else if grid_amount > 8 {
+    } else if grid_amount > 8 && !matches!(mode, Mode::UiMode) {
         let mut max_time = 204.8;
         if framerate != 10 {
             max_time = max_time / framerate as f64 * 10f64;
@@ -116,9 +130,9 @@ pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &st
             input.file_stem().unwrap().to_str().unwrap(),
             time_number_to_string(max_time)
         );
-        if yes {
+        if matches!(mode, Mode::YES) {
             println!("{message}Y");
-        } else if user_input(&message).trim().to_lowercase() != "y" {
+        } else if user_input(&message).to_lowercase() != "y" {
             return Err("Input video too long for DriveIn".to_string());
         }
     }
@@ -141,6 +155,10 @@ pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &st
         }
         save_as_dds(&output_grid, format!("{}/Grid{:0>2}.dds", grids_path_string, grid_index + 1), Mipmaps::Disabled);
     });
+    
+    if let Some(checkpoint_reached) = checkpoint_reached {
+        checkpoint_reached();
+    }
     
     Ok((grid_amount as u8, last_chunk_frame_amount as f32 / 10f32, if xwm_exists { xwm_name } else { wav_name }))
 }

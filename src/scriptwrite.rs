@@ -1,18 +1,28 @@
 use std::fs;
 use crate::utility::user_input;
 
-pub fn generate_script(mod_name: &str, mod_id: &str, video_data: &[(String, String, String, bool)]) -> Result<(), String> {
-    println!("\nPlease provide the following information to generate the script:");
-    let esp_name = user_input("Mod file name (with extension): ");
-    let esp_name = esp_name.trim();
-    let tv_record = user_input("FormID for any TV Activator: ");
-    let tv_record = tv_record.trim();
-    let pr_record = user_input("FormID for any Projector Activator: ");
-    let pr_record = pr_record.trim();
-    let di_esp_name = if video_data.iter().any(|(_, _, _, has_drivein)| *has_drivein) {
-        user_input("DriveIn mod file name (with extension, leave empty if none): ").trim().to_string()
+#[derive(serde::Deserialize)]
+pub struct ScriptInfo {
+    esp_name: String,
+    tv_record: String,
+    pr_record: String,
+    di_esp_name: String,
+}
+
+pub fn generate_script(mod_name: &str, mod_id: &str, video_data: &[(String, String, String, bool)], script_info: Option<ScriptInfo>) -> Result<(), String> {
+    let (esp_name, tv_record, pr_record, di_esp_name) = if let Some(script_info) = script_info {
+        (script_info.esp_name, script_info.tv_record, script_info.pr_record, script_info.di_esp_name)
     } else {
-        "".to_string()
+        println!("\nPlease provide the following information to generate the script:");
+        let esp_name = user_input("Mod file name (with extension): ");
+        let tv_record = user_input("FormID for any TV Activator: ");
+        let pr_record = user_input("FormID for any Projector Activator: ");
+        let di_esp_name = if video_data.iter().any(|(_, _, _, has_drivein)| *has_drivein) {
+            user_input("DriveIn mod file name (with extension, leave empty if none): ")
+        } else {
+            "".to_string()
+        };
+        (esp_name, tv_record, pr_record, di_esp_name)
     };
     
     let di_enabled = !di_esp_name.is_empty();
