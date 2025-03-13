@@ -25,7 +25,7 @@ pub enum Mode {
     UiMode
 }
 
-pub fn process_videos(
+pub fn process_videos<F: FnMut()>(
     inputs: Vec<PathBuf>,
     input_esp: Option<PathBuf>,
     input_esp_drive_in: Option<PathBuf>,
@@ -38,7 +38,7 @@ pub fn process_videos(
     generate_script: bool,
     script_info: Option<ScriptInfo>,
     mode: Mode,
-    checkpoint_reached: Option<fn()>
+    mut checkpoint_reached: F
 ) -> Result<(), String> {
     let mut videos = vec![];
     let path_to_name_and_framerate = |path: &PathBuf| -> (String, u32) {
@@ -131,7 +131,7 @@ pub fn process_videos(
         let elongated_video_identifier = elongate(&video_name, 'X', 10, true)?;
         let trailing_spaced_video_identifier = elongate(&video_name, ' ', 10, false)?;
 
-        let (grid_amount, last_stop_time, audio_name) = convert::convert_video(video_path, &elongated_mod_identifier, &elongated_video_identifier, size, keep_aspect_ratio, &mode, video_framerate, checkpoint_reached)?;
+        let (grid_amount, last_stop_time, audio_name) = convert::convert_video(video_path, &elongated_mod_identifier, &elongated_video_identifier, size, keep_aspect_ratio, &mode, video_framerate, &mut checkpoint_reached)?;
         if !write_drivein_esp {
             write_drivein_esp = grid_amount <= 8;
         }

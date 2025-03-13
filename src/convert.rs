@@ -9,7 +9,16 @@ use rayon::prelude::*;
 use crate::Mode;
 use crate::utility::{save_as_dds, time_number_to_string, user_input};
 
-pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &str, frame_size: u32, auto_scale: bool, mode: &Mode, framerate: u32, checkpoint_reached: Option<fn()>) -> Result<(u8, f32, String), String> {
+pub fn convert_video<F: FnMut()>(
+    input: PathBuf,
+    mod_identifier: &str,
+    video_identifier: &str,
+    frame_size: u32,
+    auto_scale: bool,
+    mode: &Mode,
+    framerate: u32,
+    mut checkpoint_reached: F
+) -> Result<(u8, f32, String), String> {
     let audio_path = format!("output/Sound/Videos/{mod_identifier}");
     fs::create_dir_all(&audio_path).unwrap();
     let wav_name = format!("{video_identifier}.wav");
@@ -29,9 +38,7 @@ pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &st
             }
             Err(e) => return Err(format!("{}: ffmpeg is not installed!", e))
         }
-        if let Some(checkpoint_reached) = checkpoint_reached {
-            checkpoint_reached();
-        }
+        checkpoint_reached();
     }
 
     let video_path = if auto_scale { padded_video_path } else { input_str };
@@ -70,9 +77,7 @@ pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &st
         }
         Err(e) => return Err(format!("{}: ffmpeg is not installed!", e))
     }
-    if let Some(checkpoint_reached) = checkpoint_reached {
-        checkpoint_reached();
-    }
+    checkpoint_reached();
     let xwm_name = format!("{video_identifier}.xwm");
     let xwm_path = format!("{audio_path}/{xwm_name}");
     let xwma_encoder_path = Path::new("./autovideo cache/xWMAEncode.exe");
@@ -156,10 +161,8 @@ pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &st
         }
         save_as_dds(&output_grid, format!("{}/Grid{:0>2}.dds", grids_path_string, grid_index + 1), Mipmaps::Disabled);
     });
-    
-    if let Some(checkpoint_reached) = checkpoint_reached {
-        checkpoint_reached();
-    }
+
+    checkpoint_reached();
     
     Ok((grid_amount as u8, last_chunk_frame_amount as f32 / 10f32, if xwm_exists { xwm_name } else { wav_name }))
 }

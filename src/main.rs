@@ -90,6 +90,7 @@ fn main() -> Result<(), String> {
     } else {
         return Err(format!("File or folder does not exist: {}", &args.input.to_str().unwrap()));
     }
+    
     process_videos(
         inputs,
         args.input_esp,
@@ -103,7 +104,7 @@ fn main() -> Result<(), String> {
         args.generate_script,
         None,
         if args.yes { Mode::YES } else { Mode::NO },
-        None
+        || {}
     )?;
     
     Ok(())
