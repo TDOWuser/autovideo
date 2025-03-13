@@ -1,13 +1,6 @@
 use std::fs;
+use crate::ScriptInfo;
 use crate::utility::user_input;
-
-#[derive(serde::Deserialize)]
-pub struct ScriptInfo {
-    esp_name: String,
-    tv_record: String,
-    pr_record: String,
-    di_esp_name: String,
-}
 
 pub fn generate_script(mod_name: &str, mod_id: &str, video_data: &[(String, String, String, bool)], script_info: Option<ScriptInfo>) -> Result<(), String> {
     let (esp_name, tv_record, pr_record, di_esp_name) = if let Some(script_info) = script_info {

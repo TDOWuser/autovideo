@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-pub mod utility;
+mod utility;
 mod convert;
 mod scriptwrite;
 
@@ -9,8 +9,21 @@ use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use crate::scriptwrite::ScriptInfo;
-use crate::utility::{elongate, find_and_replace_float, replace_all_strings_in_bytes, replace_first_string_in_bytes, user_input, Mode};
+use crate::utility::{elongate, find_and_replace_float, replace_all_strings_in_bytes, replace_first_string_in_bytes, user_input};
+
+#[derive(serde::Deserialize)]
+pub struct ScriptInfo {
+    esp_name: String,
+    tv_record: String,
+    pr_record: String,
+    di_esp_name: String,
+}
+
+pub enum Mode {
+    YES,
+    NO,
+    UiMode
+}
 
 pub fn process_videos(
     inputs: Vec<PathBuf>,

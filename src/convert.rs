@@ -6,7 +6,8 @@ use std::process::Command;
 use image::{GenericImageView};
 use image_dds::Mipmaps;
 use rayon::prelude::*;
-use crate::utility::{save_as_dds, time_number_to_string, user_input, Mode};
+use crate::Mode;
+use crate::utility::{save_as_dds, time_number_to_string, user_input};
 
 pub fn convert_video(input: PathBuf, mod_identifier: &str, video_identifier: &str, frame_size: u32, auto_scale: bool, mode: &Mode, framerate: u32, checkpoint_reached: Option<fn()>) -> Result<(u8, f32, String), String> {
     let audio_path = format!("output/Sound/Videos/{mod_identifier}");

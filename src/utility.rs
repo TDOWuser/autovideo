@@ -3,12 +3,6 @@ use std::io::{BufWriter, stdin, stdout, Write};
 use image::{RgbaImage};
 use image_dds::{dds_from_image, ImageFormat, Mipmaps, Quality};
 
-pub enum Mode {
-    YES,
-    NO,
-    UiMode
-}
-
 pub fn replace_all_strings_in_bytes(data: &mut [u8], to_replace: &str, replacement: &str) -> Result<(), String> {
     let replacement = elongate(replacement, 'X', to_replace.len(), true)?;
     let replacement_bytes = replacement.as_bytes();
