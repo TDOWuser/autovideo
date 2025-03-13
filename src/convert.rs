@@ -29,8 +29,26 @@ pub fn convert_video<F: FnMut()>(
         fs::create_dir_all("./autovideo cache/frames").unwrap();
     }
     let padded_video_path = "./autovideo cache/Video.mp4";
+    
     if auto_scale {
-        match Command::new("ffmpeg").args(["-i", input_str, "-c:a", "copy", "-vf", "pad=max(iw\\,ih*4/3):max(ih\\,iw*3/4):(ow-iw)/2:(oh-ih)/2", "-crf", "18", "-y", padded_video_path]).status() {
+        let has_nvenc = match Command::new("ffmpeg").args(["-encoders"]).output() {
+            Ok(output) => {
+                if !output.status.success() {
+                    return Err("Failed to fetch encoders".to_string());
+                } else {
+                    String::from_utf8(output.stdout).unwrap().contains("hevc_nvenc")
+                }
+            }
+            Err(e) => return Err(format!("{}: ffmpeg is not installed!", e))
+        };
+        let mut args: Vec<&str> = ["-i", input_str, "-c:a", "copy", "-vf", "pad=max(iw\\,ih*4/3):max(ih\\,iw*3/4):(ow-iw)/2:(oh-ih)/2", "-y"].into();
+        if has_nvenc {
+            args.extend(["-c:v", "hevc_nvenc", "-cq:v", "18"]);
+        } else {
+            args.extend(["-crf", "18"]);
+        }
+        args.push(padded_video_path);
+        match Command::new("ffmpeg").args(args).status() {
             Ok(ffmpeg_status) => {
                 if !ffmpeg_status.success() {
                     return Err("Failed to pad video".to_string());
