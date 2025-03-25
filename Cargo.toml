@@ -1,11 +1,11 @@
 [package]
 name = "autovideo"
-version = "1.5.3"
+version = "1.5.4"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.5.9", features = ["derive"] }
-image = "0.25.1"
-image_dds = "0.6.0"
-rayon = "1.10.0"
+clap = { version = "4.5.32", features = ["derive"] }
+image = "0.25.6"
+image_dds = "0.7"
+rayon = "1.10"
 serde = { version = "1", features = ["derive"] }

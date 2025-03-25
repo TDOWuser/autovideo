@@ -17,7 +17,8 @@ pub fn convert_video<F: FnMut()>(
     auto_scale: bool,
     mode: &Mode,
     framerate: u32,
-    mut checkpoint_reached: F
+    mut checkpoint_reached: F,
+    has_nvenc: bool
 ) -> Result<(u8, f32, String), String> {
     let audio_path = format!("output/Sound/Videos/{mod_identifier}");
     fs::create_dir_all(&audio_path).unwrap();
@@ -31,16 +32,6 @@ pub fn convert_video<F: FnMut()>(
     let padded_video_path = "./autovideo cache/Video.mp4";
     
     if auto_scale {
-        let has_nvenc = match Command::new("ffmpeg").args(["-encoders"]).output() {
-            Ok(output) => {
-                if !output.status.success() {
-                    return Err("Failed to fetch encoders".to_string());
-                } else {
-                    String::from_utf8(output.stdout).unwrap().contains("hevc_nvenc")
-                }
-            }
-            Err(e) => return Err(format!("{}: ffmpeg is not installed!", e))
-        };
         let mut args: Vec<&str> = ["-i", input_str, "-c:a", "copy", "-vf", "pad=max(iw\\,ih*4/3):max(ih\\,iw*3/4):(ow-iw)/2:(oh-ih)/2", "-y"].into();
         if has_nvenc {
             args.extend(["-c:v", "hevc_nvenc", "-cq:v", "18"]);

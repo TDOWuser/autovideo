@@ -9,6 +9,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use crate::utility::{elongate, find_and_replace_float, replace_all_strings_in_bytes, replace_first_string_in_bytes, user_input};
 
 #[derive(serde::Deserialize)]
@@ -127,11 +128,23 @@ pub fn process_videos<F: FnMut()>(
     let leading_spaced_mod_identifier = elongate(&mod_name, ' ', 10, true)?;
     let trailing_spaced_mod_identifier = elongate(&mod_name, ' ', 10, false)?;
 
+    let has_nvenc = match Command::new("ffmpeg").args([
+        "-f", "lavfi",
+        "-t", "1",
+        "-i", "testsrc=r=30:s=1280x720",
+        "-c:v", "hevc_nvenc",
+        "-f", "null",
+        "-"
+    ]).status() {
+        Ok(status) => status.success(),
+        Err(_) => false
+    };
+
     for (video_name, video_path, video_framerate) in videos {
         let elongated_video_identifier = elongate(&video_name, 'X', 10, true)?;
         let trailing_spaced_video_identifier = elongate(&video_name, ' ', 10, false)?;
 
-        let (grid_amount, last_stop_time, audio_name) = convert::convert_video(video_path, &elongated_mod_identifier, &elongated_video_identifier, size, keep_aspect_ratio, &mode, video_framerate, &mut checkpoint_reached)?;
+        let (grid_amount, last_stop_time, audio_name) = convert::convert_video(video_path, &elongated_mod_identifier, &elongated_video_identifier, size, keep_aspect_ratio, &mode, video_framerate, &mut checkpoint_reached, has_nvenc)?;
         if !write_drivein_esp {
             write_drivein_esp = grid_amount <= 8;
         }
