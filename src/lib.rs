@@ -127,18 +127,20 @@ pub fn process_videos<F: FnMut()>(
     let elongated_mod_identifier = elongate(&mod_name, 'X', 10, true)?;
     let leading_spaced_mod_identifier = elongate(&mod_name, ' ', 10, true)?;
     let trailing_spaced_mod_identifier = elongate(&mod_name, ' ', 10, false)?;
-
-    let has_nvenc = match Command::new("ffmpeg").args([
-        "-f", "lavfi",
-        "-t", "1",
-        "-i", "testsrc=r=30:s=1280x720",
-        "-c:v", "hevc_nvenc",
-        "-f", "null",
-        "-"
-    ]).status() {
-        Ok(status) => status.success(),
-        Err(_) => false
-    };
+    
+    let has_nvenc = if keep_aspect_ratio {
+        match Command::new("ffmpeg").args([
+            "-f", "lavfi",
+            "-t", "1",
+            "-i", "testsrc=r=30:s=1280x720",
+            "-c:v", "hevc_nvenc",
+            "-f", "null",
+            "-"
+        ]).status() {
+            Ok(status) => status.success(),
+            Err(_) => false
+        }
+    } else { false };
 
     for (video_name, video_path, video_framerate) in videos {
         let elongated_video_identifier = elongate(&video_name, 'X', 10, true)?;
