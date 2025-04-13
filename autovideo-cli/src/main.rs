@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
+use autovideo_core::{process_videos, Mode};
 use clap::Parser;
-use autovideo::{process_videos, Mode};
 
 /// CLI application to automatically make textures, .esp and .nif files for a VotW mod.
 /// 

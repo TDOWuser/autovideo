@@ -1,0 +1,8 @@
+[package]
+name = "autovideo"
+version = "1.5.5"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.32", features = ["derive"] }
+autovideo-core = { path = "../autovideo-core" }

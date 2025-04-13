@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tauri + React + Typescript</title>
+</head>
+
+<body style="margin: 0">
+    <main class="window active">
+        <div data-tauri-drag-region class="title-bar">
+            <div data-tauri-drag-region class="title-bar-text">AutoVideo UI</div>
+            <div class="title-bar-controls">
+                <button aria-label="Minimize" id="minimize-button"></button>
+                <button aria-label="Maximize" disabled></button>
+                <button aria-label="Close" id="close-button"></button>
+            </div>
+        </div>
+        <div id="root"></div>
+    </main>
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
