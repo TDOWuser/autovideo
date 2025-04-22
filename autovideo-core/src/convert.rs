@@ -73,6 +73,7 @@ pub fn convert_video<F: FnMut()>(
         "-maxrate", "2M",
         "-bufsize", "1M",
         "-async", "44000",
+        "-y",
         "autovideo cache/frames/%04d.png"
     ].iter().map(|s| s.to_string()).collect();
     if has_sound {
