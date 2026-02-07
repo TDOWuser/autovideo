@@ -66,9 +66,15 @@ struct Args {
     
     /// Framerate at which to play the videos in-game
     /// 
-    /// Alternatively you can put the wanted framerate in the video filename like this: video.30.mp4
+    /// Alternatively you can put the wanted framerate in the video filename like this: video.30fps.mp4
     #[arg(short = 'r', long, default_value_t = 10)]
-    framerate: u32
+    framerate: u32,
+
+    /// Enable High Quality
+    ///
+    /// High Quality will result in better visuals but double the filesize and take longer to process
+    #[arg(short, long)]
+    quality: bool,
 }
 
 
@@ -104,7 +110,8 @@ fn main() -> Result<(), String> {
         args.generate_script,
         None,
         if args.yes { Mode::YES } else { Mode::NO },
-        || {}
+        || {},
+        args.quality
     )?;
     
     Ok(())

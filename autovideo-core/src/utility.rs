@@ -17,6 +17,19 @@ pub fn replace_all_strings_in_bytes(data: &mut [u8], to_replace: &str, replaceme
     Ok(())
 }
 
+pub fn count_strings_in_bytes(data: &[u8], search_string: &str) -> u32 {
+    let mut counter = 0;
+    let search_string_bytes = search_string.as_bytes();
+    let mut position = 0;
+
+    while let Some(start) = data[position..].windows(search_string_bytes.len()).position(|window| window == search_string_bytes) {
+        let start = start + position;
+        position = start + search_string_bytes.len();
+        counter += 1;
+    }
+    counter
+}
+
 pub fn replace_first_string_in_bytes(data: &mut [u8], to_replace: &str, replacement: &str) -> Result<(), String> {
     let replacement = elongate(replacement, 'X', to_replace.len(), true)?;
     let replacement_bytes = replacement.as_bytes();
@@ -57,8 +70,8 @@ pub fn find_and_replace_float(buffer: &mut [u8], target: f32, replacement: f32) 
     }
 }
 
-pub fn save_as_dds(image: &RgbaImage, output_path: String, mipmaps: Mipmaps) {
-    let dds_image = dds_from_image(image, ImageFormat::BC1RgbaUnorm, Quality::Slow, mipmaps).expect("Failed to convert to dds");
+pub fn save_as_dds(image: &RgbaImage, output_path: String, high_quality: bool) {
+    let dds_image = dds_from_image(image, if high_quality { ImageFormat::BC7RgbaUnorm } else { ImageFormat::BC1RgbaUnorm }, Quality::Slow, Mipmaps::Disabled).expect("Failed to convert to dds");
     let mut writer = BufWriter::new(File::create(output_path).unwrap());
     dds_image.write(&mut writer).unwrap();
 }

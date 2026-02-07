@@ -4,7 +4,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use image::{GenericImageView};
-use image_dds::Mipmaps;
 use rayon::prelude::*;
 use crate::Mode;
 use crate::utility::{save_as_dds, time_number_to_string, user_input};
@@ -18,7 +17,8 @@ pub fn convert_video<F: FnMut()>(
     mode: &Mode,
     framerate: u32,
     mut checkpoint_reached: F,
-    has_nvenc: bool
+    has_nvenc: bool,
+    high_quality: bool
 ) -> Result<(u8, f32, String), String> {
     let audio_path = format!("output/Sound/Videos/{mod_identifier}");
     fs::create_dir_all(&audio_path).unwrap();
@@ -169,7 +169,7 @@ pub fn convert_video<F: FnMut()>(
                 output_grid.put_pixel(x + x_offset, y + y_offset, pixel);
             }
         }
-        save_as_dds(&output_grid, format!("{}/Grid{:0>2}.dds", grids_path_string, grid_index + 1), Mipmaps::Disabled);
+        save_as_dds(&output_grid, format!("{}/Grid{:0>2}.dds", grids_path_string, grid_index + 1), high_quality);
     });
 
     checkpoint_reached();

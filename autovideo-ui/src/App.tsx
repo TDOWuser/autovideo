@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "7.css"
 import "./App.css"
@@ -22,6 +22,7 @@ function App() {
     const [selectedGenerate, setSelectedGenerate] = useState<'esp' | 'script'>('esp')
     const [size, setSize] = useState(512)
     const [fps, setFps] = useState(10)
+    const [highQuality, setHighQuality] = useState(false)
 
     const [inputs, setInputs] = useState<string[]>([])
     const [esp, setEsp] = useState<string>()
@@ -38,6 +39,20 @@ function App() {
     const inputValid = inputs.length > 0
         && modName.length > 0
         && (selectedGenerate === 'script' ? (espName.length > 0 && tvRecord.length > 0 && prRecord.length > 0) : true)
+
+    useEffect(() => {
+        (async () => {
+            if (selectedGenerate == 'esp') {
+                for (const path of [esp, desp]) {
+                    const amount: number = !!path ? await invoke('count_placeholders', {esp: path}) : 10
+                    if (inputs.length > amount) {
+                        await message(`You have selected ${inputs.length} video(s) but only have ${amount} placeholders${!!path ? ` left in "${path}"` : ''}! Please select less videos or generate a FO4Edit script instead!`, { title: 'Too many videos!', kind: 'warning' })
+                        break
+                    }
+                }
+            }
+        })()
+    }, [esp, desp, inputs, selectedGenerate])
 
     const onStart = async () => {
         setActive(true)
@@ -59,7 +74,8 @@ function App() {
                     tv_record: tvRecord,
                     pr_record: prRecord,
                     di_esp_name: driveInEspName
-                } : undefined
+                } : undefined,
+                highQuality
             })
             await revealItemInDir('./output')
         } catch (err) {
@@ -71,7 +87,7 @@ function App() {
     }
 
     return (
-        <div className="window-body has-space" style={{height: 280, display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
+        <div className="window-body has-space" style={{height: 287, display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
             <div style={{display: 'flex', justifyContent: 'space-between'}}>
                 <div>
                     <div className="field-row-stacked" style={{marginBottom: 6}}>
@@ -165,10 +181,18 @@ function App() {
                                         setFps(nr)
                                     }
                                 }}
-                                title={`Framerate at which to play the videos in-game\nAlternatively you can put the wanted framerate in the video filename like this: video.30.mp4.`}
+                                title={`Framerate at which to play the videos in-game\nAlternatively you can put the wanted framerate in the video filename like this: video.30fps.mp4.`}
                                 disabled={active}
                             />
                         </div>
+                    </div>
+                    <div style={{marginTop: 4}}>
+                        <label htmlFor="quality-select" style={{marginRight: 5}}>Quality</label>
+                        <select disabled={active} id="quality-select" value={highQuality ? 'High' : 'Low'} onChange={e => setHighQuality(e.target.value === 'High')} title="High Quality will result in better visuals but double the filesize and take longer to process">
+                            {[false, true].map(option => (
+                                <option key={option ? 'high' : 'low'}>{option ? 'High' : 'Low'}</option>
+                            ))}
+                        </select>
                     </div>
                     <fieldset>
                         <legend>Options</legend>

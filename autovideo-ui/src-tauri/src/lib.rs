@@ -1,7 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use std::path::PathBuf;
-use autovideo_core::{process_videos, Mode, ScriptInfo};
+use autovideo_core::{Mode, ScriptInfo, count_esp_placeholders, process_videos};
 use serde::Serialize;
 use tauri::{Window, Emitter};
 
@@ -26,6 +26,7 @@ async fn convert_files(
     size: u32,
     keep_aspect_ratio: bool,
     script_info: Option<ScriptInfo>,
+    high_quality: bool
 ) -> Result<(), String> {
     let mut progress = Progress {
         current: 0,
@@ -52,10 +53,17 @@ async fn convert_files(
         || {
             progress.current += 1;
             window.emit("listener", progress.clone()).unwrap();
-        }
+        },
+        high_quality
     )?;
     
     Ok(())
+}
+
+
+#[tauri::command]
+async fn count_placeholders(esp: PathBuf) -> u32 {
+    count_esp_placeholders(esp)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -63,7 +71,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![convert_files])
+        .invoke_handler(tauri::generate_handler![convert_files, count_placeholders])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

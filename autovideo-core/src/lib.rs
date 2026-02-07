@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use crate::utility::{elongate, find_and_replace_float, replace_all_strings_in_bytes, replace_first_string_in_bytes, user_input};
+use crate::utility::{count_strings_in_bytes, elongate, find_and_replace_float, replace_all_strings_in_bytes, replace_first_string_in_bytes, user_input};
 
 #[derive(serde::Deserialize)]
 pub struct ScriptInfo {
@@ -39,15 +39,16 @@ pub fn process_videos<F: FnMut()>(
     generate_script: bool,
     script_info: Option<ScriptInfo>,
     mode: Mode,
-    mut checkpoint_reached: F
+    mut checkpoint_reached: F,
+    high_quality: bool
 ) -> Result<(), String> {
     let mut videos = vec![];
     let path_to_name_and_framerate = |path: &PathBuf| -> (String, u32) {
         let mut name = path.file_stem().unwrap().to_str().unwrap().to_string();
         let mut framerate = input_framerate;
         let split: Vec<&str> = name.split('.').collect();
-        if split.len() > 1 {
-            if let Ok(fps) = split[split.len()-1].parse::<u32>() {
+        if split.len() > 1 && split[split.len()-1].ends_with("fps") {
+            if let Ok(fps) = split[split.len()-1].strip_suffix("fps").unwrap().parse::<u32>() {
                 framerate = fps;
                 name = split[0..split.len()-1].join("_");
             }
@@ -84,7 +85,7 @@ pub fn process_videos<F: FnMut()>(
             return Err(format!("Name {} is too long. Max 10 characters! Rename the video / use --video_name when using a single video / use --short-names.", name));
         }
         if videos.iter().position(|(n, _, _)| n == name).unwrap() != index {
-            return Err(format!("Cannot have two videos with the name name: {}", name))
+            return Err(format!("Cannot have two videos with the same name: {}", name))
         }
     }
     if (size & (size - 1)) != 0 {
@@ -97,7 +98,7 @@ pub fn process_videos<F: FnMut()>(
 
 
     let mut tv_esp_bytes = if let Some(input_esp) = input_esp {
-        if input_esp.exists() && input_esp.is_file() && input_esp.extension().unwrap().to_ascii_lowercase() == "esp" {
+        if input_esp.exists() && input_esp.is_file() && input_esp.extension().unwrap().eq_ignore_ascii_case("esp") {
             let mut bytes = vec![];
             File::open(input_esp).unwrap().read_to_end(&mut bytes).unwrap();
             bytes
@@ -108,7 +109,7 @@ pub fn process_videos<F: FnMut()>(
         include_bytes!("./assets/TemplateVideos_10.esp").into()
     };
     let mut di_esp_bytes = if let Some(input_esp) = input_esp_drive_in {
-        if input_esp.exists() && input_esp.is_file() && input_esp.extension().unwrap().to_ascii_lowercase() == "esp" {
+        if input_esp.exists() && input_esp.is_file() && input_esp.extension().unwrap().eq_ignore_ascii_case("esp") {
             let mut bytes = vec![];
             File::open(input_esp).unwrap().read_to_end(&mut bytes).unwrap();
             bytes
@@ -146,7 +147,7 @@ pub fn process_videos<F: FnMut()>(
         let elongated_video_identifier = elongate(&video_name, 'X', 10, true)?;
         let trailing_spaced_video_identifier = elongate(&video_name, ' ', 10, false)?;
 
-        let (grid_amount, last_stop_time, audio_name) = convert::convert_video(video_path, &elongated_mod_identifier, &elongated_video_identifier, size, keep_aspect_ratio, &mode, video_framerate, &mut checkpoint_reached, has_nvenc)?;
+        let (grid_amount, last_stop_time, audio_name) = convert::convert_video(video_path, &elongated_mod_identifier, &elongated_video_identifier, size, keep_aspect_ratio, &mode, video_framerate, &mut checkpoint_reached, has_nvenc, high_quality)?;
         if !write_drivein_esp {
             write_drivein_esp = grid_amount <= 8;
         }
@@ -216,4 +217,10 @@ pub fn process_videos<F: FnMut()>(
 
     println!("\nFinished!");
     Ok(())
+}
+
+pub fn count_esp_placeholders(esp: PathBuf) -> u32 {
+    let mut bytes = vec![];
+    File::open(esp).unwrap().read_to_end(&mut bytes).unwrap();
+    count_strings_in_bytes(&bytes, "AUTOVIDENT")
 }
